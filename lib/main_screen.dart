@@ -15,6 +15,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   final _linkController = TextEditingController();
+  Directory? dirFolder;
 
   Future downloadFile(String url) async {
     final permissionStatus = await Permission.storage.status;
@@ -23,11 +24,11 @@ class _MainScreenState extends State<MainScreen> {
     }
 
     final dir = await getExternalStorageDirectory();
-    final dirFolder = Directory('${dir!.path}/shazlycodeFolder');
-    if (dirFolder.existsSync()) {
-      print(dirFolder.path);
+    dirFolder = Directory('${dir!.path}/shazlycodeFolder');
+    if (dirFolder!.existsSync()) {
+      print(dirFolder!.path);
     } else {
-      await dirFolder.create();
+      await dirFolder!.create();
     }
 
     final response = await Dio().get(url,
@@ -35,7 +36,7 @@ class _MainScreenState extends State<MainScreen> {
             responseType: ResponseType.bytes,
             followRedirects: false,
             receiveTimeout: 0));
-    final file = File('${dirFolder.path}/${DateTime.now().toString()}.jpg');
+    final file = File('${dirFolder!.path}/${DateTime.now().toString()}.jpg');
     final raf = file.openSync(mode: FileMode.write);
     raf.writeFromSync(response.data);
     raf.close();
@@ -44,6 +45,8 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    var imagesList = dirFolder!.listSync().map((e) => e.path).toList();
+    print(imagesList.length);
     return Scaffold(
       appBar: AppBar(
         title: Text('Your downloader'),
@@ -70,7 +73,13 @@ class _MainScreenState extends State<MainScreen> {
                       : downloadFile(_linkController.text);
                 },
                 icon: Icon(Icons.download),
-                label: Text('Download'))
+                label: Text('Download')),
+            Expanded(
+                child: ListView.builder(
+                    itemCount: imagesList.length,
+                    itemBuilder: (context, index) {
+                      return Image.file(File(imagesList[index]));
+                    }))
           ],
         ),
       ),
